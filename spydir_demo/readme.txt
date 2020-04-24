@@ -1,3 +1,7 @@
+Edit (4/24/20, Justin Maddox):
+
+Changed again. Code runs from scrape_driver.py and outputs everything to 'output.csv'. Still prints to terminal. Added example CSV file to demonstrate format of output. 
+
 Edit (4/23/20, Justin Maddox):
 
 Changed this to add the ability to run the scraper from inside a python script. Currently, by running scrape_driver.py, the code will scrape the target demo website and print a list of dicts containing each found link and on what page it was found to the terminal. 
