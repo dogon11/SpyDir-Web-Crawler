@@ -4,6 +4,7 @@ from spydir_demo.spiders.linkspider import LinkSpider
 
 import sys
 import csv
+from collections import defaultdict
 
 FILE_NAME = 'output.csv'
 
@@ -24,7 +25,28 @@ def genCSV(filename, start_urls, link_items):
     for link in link_items:
         writer.writerow(link)
     csv_file.close()
-
+#Goes through the urls in the .csv file and checks them against a user inputted url.
+#Requires a .csv file to work.
+def search(filename):
+    lables = defaultdict(list)
+    isEqual = 0;
+    string = input("What URL are you looking for: ")
+    print ("\n")
+    with open(filename) as f:
+        reader = csv.reader(f)
+        next(reader)  # skip the first line in the input file
+        for i,row in enumerate(reader):
+            lables[row[0]].append(row[1])
+    for keys,values in lables.items():
+        if keys == string:
+            isEqual = 1
+        for v in values:
+            if v == string:
+                isEqual = 1
+    if isEqual == 1:
+        print ("This URL: {} exists in the tree\n".format(string))
+    else:
+        print ("ERROR: The URL: {} does not exist in the tree\n".format(string))
 #Main function to drive the current testing functionality. Takes two terminal inputs
 #of the form [start URL] [allowed domains].
 def main():
