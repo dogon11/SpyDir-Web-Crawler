@@ -1,12 +1,14 @@
 import scrapy
-from scrapy.crawler import CrawlerProcess
-from spydir_demo.spiders.linkspider import LinkSpider
-
 import sys
 import csv
+import queue
+import tkinter
+import shutil
+import os
+from tkinter import filedialog
+from scrapy.crawler import CrawlerProcess
+from spydir_demo.spiders.linkspider import LinkSpider
 from collections import defaultdict
-
-FILE_NAME = 'output.csv'
 
 #This function takes in a LIST of start urls and allowed domains to start the crawler,
 #returning the list of dicts containing where the link was found and where it points.
@@ -70,6 +72,13 @@ def genCSV(filename, start_urls, link_items):
         writer.writerow(link)
     csv_file.close()
     
+#Tries to open a system-native file browser to allow the user to navigate to a CSV,
+#then tries to copy that file to the project directory and gets the new filename.
+def getFile():
+    filepath = filedialog.askopenfilename()
+    shutil.copy(filepath, ".", follow_symlinks=True)
+    return os.path.basename(filepath)
+    
 #Goes through the urls in the .csv file and checks them against a user inputted url.
 #Requires a .csv file to work.
 def search(filename):
@@ -96,6 +105,7 @@ def search(filename):
 #Main function to drive the current testing functionality. Takes two terminal inputs
 #of the form [start URL] [allowed domains].
 def main():
+    filename = 'output.csv'
     returnList = []
     if len(sys.argv) < 3:
         print("Proper usage: >python scrape_driver.py [start URL] [allowed domains]")
@@ -103,7 +113,7 @@ def main():
         input_urls = [sys.argv[1]] #This has to be a list or scrapy breaks.
         input_domains = sys.argv[2:] #Ditto here.
         print(input_domains)
-        returnList = getLinks(input_urls, input_domains, FILE_NAME)
+        returnList = getLinks(input_urls, input_domains, filename)
         print(returnList)
 
 if __name__ == '__main__':
