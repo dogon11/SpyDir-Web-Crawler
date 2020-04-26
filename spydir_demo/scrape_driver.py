@@ -17,6 +17,50 @@ def getLinks(start_urls, allowed_domains, filename):
     genCSV(filename, start_urls, LinkSpider.link_items)
     return LinkSpider.link_items
 
+#Helper function to return a list of all dict items where the "url_from" value matches the specified one.
+def findByValue(desired_value, link_items):
+    return_list = []
+    for item in link_items:
+        if item.get("url_from") == desired_value:
+            return_list.append(item)
+    return return_list
+
+#Helper function to check if a list of dicts contains a certain "url_from" value.
+def containsFrom(desired_value, link_items):
+    for element in link_items:
+        if element.get("url_from") == desired_value:
+            return True
+    return False
+
+#Helper function to check if a list of dicts contains a certain "url_to" value.
+def containsTo(desired_value, link_items):
+    for element in link_items:
+        if element.get("url_to") == desired_value:
+            return True
+    return False
+
+#Helper function to check if a list of dicts contains a certain "url_to" or "url_from" value.
+def containsEither(desired_value, link_items):
+    for element in link_items:
+        if (element.get("url_to") == desired_value) or (element.get("url_from") == desired_value):
+            return True
+    return False
+
+#Helper function to remove all cycles from our graph to make it a tree. Returns a new list of dicts without cycles.
+def removeCycles(start_urls, link_items):
+    finished_list = []
+    item_queue = queue.Queue()
+    item_queue.put(start_urls[0])
+    while not item_queue.empty():
+        current_str = item_queue.get()
+        current_items = findByValue(current_str, link_items)
+        for item in current_items:
+            if not containsEither(item.get("url_to"), finished_list):
+                #then the item can be added. put it's "url_to" in the queue and add the item to the finished list.
+                item_queue.put(item.get("url_to"))
+                finished_list.append(item)
+    return finished_list
+
 def genCSV(filename, start_urls, link_items):
     csv_file = open(filename, 'w', newline='')
     fields = ["url_from", "url_to"]
