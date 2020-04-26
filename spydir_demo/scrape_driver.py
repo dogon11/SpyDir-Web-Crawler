@@ -69,6 +69,7 @@ def genCSV(filename, start_urls, link_items):
     for link in link_items:
         writer.writerow(link)
     csv_file.close()
+    
 #Goes through the urls in the .csv file and checks them against a user inputted url.
 #Requires a .csv file to work.
 def search(filename):
@@ -91,6 +92,7 @@ def search(filename):
         print ("This URL: {} exists in the tree\n".format(string))
     else:
         print ("ERROR: The URL: {} does not exist in the tree\n".format(string))
+        
 #Main function to drive the current testing functionality. Takes two terminal inputs
 #of the form [start URL] [allowed domains].
 def main():
