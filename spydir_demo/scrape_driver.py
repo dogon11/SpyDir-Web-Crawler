@@ -13,6 +13,8 @@ from collections import defaultdict
 from multiprocessing import Process, Queue, freeze_support
 from twisted.internet import reactor
 
+"""
+# Code from the forkening:
 def f(q, start_urls, allowed_domains):
     try:
         runner = crawler.CrawlerRunner()
@@ -22,10 +24,20 @@ def f(q, start_urls, allowed_domains):
         q.put(LinkSpider.link_items)
     except Exception as e:
         q.put(None)
+"""
 
 #This function takes in a LIST of start urls and allowed domains to start the crawler,
 #returning the list of dicts containing where the link was found and where it points.
 def getLinks(start_urls, allowed_domains, filename):  
+    #Old code before the forkening:
+    process = CrawlerProcess() #settings={'FEED_FORMAT': 'csv', 'FEED_URI': filename} is the short fancy way, but won't work.
+    process.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains, stop_after_crawl=False) #Potential issues with allowed_domains: needs investigating.
+    process.start()
+    link_items = removeCycles(start_urls, LinkSpider.link_items)
+    genCSV(filename, start_urls, link_items)
+    return link_items
+    """
+    # Code from the forkening:
     freeze_support()
     q = Queue()
     p = Process(target=f, args=(q, start_urls, allowed_domains))
@@ -36,6 +48,7 @@ def getLinks(start_urls, allowed_domains, filename):
     if result is not None:
         genCSV(filename, start_urls, result)
         return result
+    """
 
 #Helper function to return a list of all dict items where the "url_from" value matches the specified one.
 def findByValue(desired_value, link_items):
