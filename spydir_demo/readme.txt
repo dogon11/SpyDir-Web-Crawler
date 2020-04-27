@@ -1,3 +1,9 @@
+Edit (4/26/20, Justin Maddox):
+
+Added Chris Tato's search by filename functionality inside scrape_driver.py, and added Chris Renfro's GUI driving script as "gui_test.py". GUI can be run from the command line by:
+
+>python gui_test.py
+
 Edit (4/24/20, Justin Maddox):
 
 Changed again. Code runs from scrape_driver.py and outputs everything to 'output.csv'. Still prints to terminal. Added example CSV file to demonstrate format of output. 
