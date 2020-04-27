@@ -5,19 +5,37 @@ import queue
 import tkinter
 import shutil
 import os
+import scrapy.crawler as crawler
 from tkinter import filedialog
 from scrapy.crawler import CrawlerProcess
 from spydir_demo.spiders.linkspider import LinkSpider
 from collections import defaultdict
+from multiprocessing import Process, Queue, freeze_support
+from twisted.internet import reactor
+
+def f(q, start_urls, allowed_domains):
+    try:
+        runner = crawler.CrawlerRunner()
+        deferred = runner.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains)
+        deferred.addBoth(lambda _: reactor.stop())
+        reactor.run()
+        q.put(LinkSpider.link_items)
+    except Exception as e:
+        q.put(None)
 
 #This function takes in a LIST of start urls and allowed domains to start the crawler,
 #returning the list of dicts containing where the link was found and where it points.
-def getLinks(start_urls, allowed_domains, filename):
-    process = CrawlerProcess() #settings={'FEED_FORMAT': 'csv', 'FEED_URI': filename} is the short fancy way, but won't work.
-    process.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains) #Potential issues with allowed_domains: needs investigating.
-    process.start()
-    genCSV(filename, start_urls, LinkSpider.link_items)
-    return LinkSpider.link_items
+def getLinks(start_urls, allowed_domains, filename):  
+    freeze_support()
+    q = Queue()
+    p = Process(target=f, args=(q, start_urls, allowed_domains))
+    p.start()    
+    p.join()
+    result = removeCycles(start_urls, q.get())
+
+    if result is not None:
+        genCSV(filename, start_urls, result)
+        return result
 
 #Helper function to return a list of all dict items where the "url_from" value matches the specified one.
 def findByValue(desired_value, link_items):
