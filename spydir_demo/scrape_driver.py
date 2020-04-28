@@ -1,3 +1,7 @@
+import scrapydo
+scrapydo.setup()
+import logging
+logging.basicConfig(level=logging.DEBUG)
 import scrapy
 import sys
 import csv
@@ -29,6 +33,12 @@ def f(q, start_urls, allowed_domains):
 #This function takes in a LIST of start urls and allowed domains to start the crawler,
 #returning the list of dicts containing where the link was found and where it points.
 def getLinks(start_urls, allowed_domains, filename):  
+    #Newest code: Scrapydo
+    scrapydo.run_spider(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains)
+    link_items = removeCycles(start_urls, LinkSpider.link_items)
+    genCSV(filename, start_urls, link_items)
+    return link_items    
+    """
     #Old code before the forkening:
     process = CrawlerProcess() #settings={'FEED_FORMAT': 'csv', 'FEED_URI': filename} is the short fancy way, but won't work.
     process.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains, stop_after_crawl=False) #Potential issues with allowed_domains: needs investigating.
@@ -36,6 +46,7 @@ def getLinks(start_urls, allowed_domains, filename):
     link_items = removeCycles(start_urls, LinkSpider.link_items)
     genCSV(filename, start_urls, link_items)
     return link_items
+    """
     """
     # Code from the forkening:
     freeze_support()
