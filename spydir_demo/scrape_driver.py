@@ -1,7 +1,9 @@
 import scrapydo
 scrapydo.setup()
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
+
 import scrapy
 import sys
 import csv
@@ -14,7 +16,7 @@ from tkinter import filedialog
 from scrapy.crawler import CrawlerProcess
 from spydir_demo.spiders.linkspider import LinkSpider
 from collections import defaultdict
-from multiprocessing import Process, Queue, freeze_support
+from multiprocessing import Process, Queue, freeze_support, set_start_method
 from twisted.internet import reactor
 
 """
@@ -33,15 +35,10 @@ def f(q, start_urls, allowed_domains):
 #This function takes in a LIST of start urls and allowed domains to start the crawler,
 #returning the list of dicts containing where the link was found and where it points.
 def getLinks(start_urls, allowed_domains, filename):  
-    #Newest code: Scrapydo
-    scrapydo.run_spider(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains)
-    link_items = removeCycles(start_urls, LinkSpider.link_items)
-    genCSV(filename, start_urls, link_items)
-    return link_items    
     """
     #Old code before the forkening:
     process = CrawlerProcess() #settings={'FEED_FORMAT': 'csv', 'FEED_URI': filename} is the short fancy way, but won't work.
-    process.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains, stop_after_crawl=False) #Potential issues with allowed_domains: needs investigating.
+    process.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains) #Potential issues with allowed_domains: needs investigating.
     process.start()
     link_items = removeCycles(start_urls, LinkSpider.link_items)
     genCSV(filename, start_urls, link_items)
@@ -49,6 +46,7 @@ def getLinks(start_urls, allowed_domains, filename):
     """
     """
     # Code from the forkening:
+    set_spawn_method(fork)
     freeze_support()
     q = Queue()
     p = Process(target=f, args=(q, start_urls, allowed_domains))
@@ -60,6 +58,11 @@ def getLinks(start_urls, allowed_domains, filename):
         genCSV(filename, start_urls, result)
         return result
     """
+    #Newest code: Scrapydo
+    testMe = scrapydo.run_spider(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains)
+    link_items = removeCycles(start_urls, LinkSpider.link_items)
+    genCSV(filename, start_urls, link_items)
+    return link_items
 
 #Helper function to return a list of all dict items where the "url_from" value matches the specified one.
 def findByValue(desired_value, link_items):
@@ -118,14 +121,25 @@ def genCSV(filename, start_urls, link_items):
 #then tries to copy that file to the project directory and gets the new filename.
 def getFile():
     filepath = filedialog.askopenfilename()
-    shutil.copy(filepath, ".", follow_symlinks=True)
-    return os.path.basename(filepath)
-    
+    filename = os.path.basename(filepath)
+    if not os.path.isfile(filename):
+        shutil.copy(filepath, ".", follow_symlinks=True) #here, officer!
+    return os.path.splitext(os.path.basename(filename))[0]
+
+def parseCSV(filename):
+    returnList = []
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        next(reader)
+        for line in reader:
+            returnList.append({'url_from': line['url_from'], 'url_to': line['url_to']})
+    return returnList
+
 #Goes through the urls in the .csv file and checks them against a user inputted url.
 #Requires a .csv file to work.
 def search(filename):
     lables = defaultdict(list)
-    isEqual = 0;
+    isEqual = 0
     string = input("What URL are you looking for: ")
     print ("\n")
     with open(filename) as f:
