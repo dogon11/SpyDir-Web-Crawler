@@ -98,9 +98,11 @@ def search():
 def main():
 	root = tk.Tk()
 	root.title("SpyDir ;))")
+	cwdLabel = tk.Label(root, text=("Current working directory: " + getcwd()))
 	e1 = tk.Entry(root, width = 100, borderwidth = 5) #start URL
 	e2 = tk.Entry(root, width = 100, borderwidth = 5) #allowed domain
 	e3 = tk.Entry(root, width = 100, borderwidth = 5) #CSV filename
+	cwdLabel.pack()
 	e1.pack()
 	e2.pack()
 	e3.pack()
