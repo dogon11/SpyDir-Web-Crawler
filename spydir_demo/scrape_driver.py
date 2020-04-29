@@ -1,34 +1,17 @@
 import scrapydo
 scrapydo.setup()
+"""
 import logging
 logging.basicConfig(level=logging.DEBUG)
-import scrapy
+"""
 import sys
 import csv
 import queue
-import tkinter
 import shutil
 import os
-import scrapy.crawler as crawler
 from tkinter import filedialog
-from scrapy.crawler import CrawlerProcess
 from spydir_demo.spiders.linkspider import LinkSpider
 from collections import defaultdict
-from multiprocessing import Process, Queue, freeze_support
-from twisted.internet import reactor
-
-"""
-# Code from the forkening:
-def f(q, start_urls, allowed_domains):
-    try:
-        runner = crawler.CrawlerRunner()
-        deferred = runner.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains)
-        deferred.addBoth(lambda _: reactor.stop())
-        reactor.run()
-        q.put(LinkSpider.link_items)
-    except Exception as e:
-        q.put(None)
-"""
 
 #This function takes in a LIST of start urls and allowed domains to start the crawler,
 #returning the list of dicts containing where the link was found and where it points.
@@ -37,29 +20,7 @@ def getLinks(start_urls, allowed_domains, filename):
     scrapydo.run_spider(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains)
     link_items = removeCycles(start_urls, LinkSpider.link_items)
     genCSV(filename, start_urls, link_items)
-    return link_items    
-    """
-    #Old code before the forkening:
-    process = CrawlerProcess() #settings={'FEED_FORMAT': 'csv', 'FEED_URI': filename} is the short fancy way, but won't work.
-    process.crawl(LinkSpider, start_urls=start_urls, allowed_domains=allowed_domains, stop_after_crawl=False) #Potential issues with allowed_domains: needs investigating.
-    process.start()
-    link_items = removeCycles(start_urls, LinkSpider.link_items)
-    genCSV(filename, start_urls, link_items)
     return link_items
-    """
-    """
-    # Code from the forkening:
-    freeze_support()
-    q = Queue()
-    p = Process(target=f, args=(q, start_urls, allowed_domains))
-    p.start()    
-    p.join()
-    result = removeCycles(start_urls, q.get())
-
-    if result is not None:
-        genCSV(filename, start_urls, result)
-        return result
-    """
 
 #Helper function to return a list of all dict items where the "url_from" value matches the specified one.
 def findByValue(desired_value, link_items):
@@ -118,32 +79,40 @@ def genCSV(filename, start_urls, link_items):
 #then tries to copy that file to the project directory and gets the new filename.
 def getFile():
     filepath = filedialog.askopenfilename()
-    shutil.copy(filepath, ".", follow_symlinks=True)
-    return os.path.basename(filepath)
-    
+    if filepath == '':
+        return None
+    filename = os.path.basename(filepath)
+    if not os.path.isfile(filename):
+        shutil.copy(filepath, ".", follow_symlinks=True)
+    return os.path.splitext(os.path.basename(filename))[0]
+
+def parseCSV(filename):
+    returnList = []
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        next(reader)
+        for line in reader:
+            returnList.append({'url_from': line['url_from'], 'url_to': line['url_to']})
+    return returnList
+
 #Goes through the urls in the .csv file and checks them against a user inputted url.
 #Requires a .csv file to work.
-def search(filename):
+def search(url, filename):
     lables = defaultdict(list)
-    isEqual = 0;
-    string = input("What URL are you looking for: ")
-    print ("\n")
+    isEqual = False
     with open(filename) as f:
         reader = csv.reader(f)
         next(reader)  # skip the first line in the input file
         for i,row in enumerate(reader):
             lables[row[0]].append(row[1])
-    for keys,values in lables.items():
-        if keys == string:
-            isEqual = 1
+    for key,values in lables.items():
+        if key == url:
+            isEqual = True
         for v in values:
-            if v == string:
-                isEqual = 1
-    if isEqual == 1:
-        print ("This URL: {} exists in the tree\n".format(string))
-    else:
-        print ("ERROR: The URL: {} does not exist in the tree\n".format(string))
-        
+            if v == url:
+                isEqual = True
+    return isEqual
+
 #Main function to drive the current testing functionality. Takes two terminal inputs
 #of the form [start URL] [allowed domains].
 def main():
